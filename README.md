@@ -2,6 +2,12 @@ PAuLaFAST X86
 (PCL+ImGUI+3d Gfx)
 =====
 
+How to build:
+
+    mkdir build
+    cd build
+    cmake ..
+
 A proper CMake project is setup for Visual Studio X86.
 
 glew (and the Shader version of OpenGL) has been omitted for now.

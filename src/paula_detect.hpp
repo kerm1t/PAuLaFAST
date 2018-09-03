@@ -245,6 +245,8 @@ int RANSACGrid()
   std::cout << "RANSAC-Grid " << float(clock() - begin_time) / CLOCKS_PER_SEC << " [s] ___ "
     << "groundsurface has " << (uint32)p_groundsurface->points.size() << " data points" << std::endl;
   // <==== RANSAC ====
+
+  return 1;
 }
 
 
