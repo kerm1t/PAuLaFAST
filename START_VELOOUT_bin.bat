@@ -1,0 +1,1 @@
+.\release\paulafast.exe D:\veloout_bin\velodyne\veloout000000.bin
