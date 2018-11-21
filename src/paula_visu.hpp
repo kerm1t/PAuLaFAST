@@ -172,6 +172,11 @@ void Paula_render_2Viewports(GLFWwindow* window)
   GLint windowWidth, windowHeight;
   glfwGetWindowSize(window, &windowWidth, &windowHeight);
 
+  // ---------
+  // Viewports
+  // ---------
+  // s. https://stackoverflow.com/questions/726379/how-to-use-multiple-viewports-in-opengl
+  // s. auch zu viewports rendern (FBO, ...) https://stackoverflow.com/questions/13710791/multiple-viewports-interfering
 
   // ----------
   // Viewport 1
@@ -193,11 +198,11 @@ void Paula_render_2Viewports(GLFWwindow* window)
   // ----------
   // Viewport 2
   // ----------
-  glViewport(windowWidth*0.5, 0, windowWidth, windowHeight);
+  glViewport(windowWidth*0.5, 0, windowWidth*0.5, windowHeight);
 
   glMatrixMode(GL_PROJECTION_MATRIX);
   glLoadIdentity();
-  gluPerspective(60, (double)windowWidth / (double)windowHeight, 0.1, 100);
+  gluPerspective(60, (double)windowWidth*0.5 / (double)windowHeight, 0.1, 100);
 
   glMatrixMode(GL_MODELVIEW_MATRIX);
   //  glTranslatef(0, 0, -dist); // 2do, fix!! x-shift due to Viewports

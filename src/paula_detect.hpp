@@ -25,7 +25,9 @@
 
 #include "Vec3f.hxx"
 
+
 int i_processing_step;
+
 
 #ifdef FREESPACE
 #include "frs_customer_defs.h"
@@ -78,6 +80,7 @@ s_groundpatch fitplane_RANSAC(pcl::PointCloud<pcl::PointXYZ>::Ptr p_cloud)
   //  return 0;
 }
 
+
 // PointcloudSrc, Indices --> PointcloudDst
 void outliers(pcl::PointCloud<pcl::PointXYZ>::Ptr p_cloudSrc, std::vector<int> * indices, pcl::PointCloud<pcl::PointXYZ>::Ptr p_cloudDst)
 {
@@ -91,6 +94,7 @@ void outliers(pcl::PointCloud<pcl::PointXYZ>::Ptr p_cloudSrc, std::vector<int> *
   extract.filter(*p_cloudDst);
 }
 
+
 int RANSACGrid()
 {
   clock_t begin_time = clock();
@@ -101,7 +105,7 @@ int RANSACGrid()
   begin_time = clock();
 
 
-  p_groundsurface.reset(new pcl::PointCloud<pcl::PointXYZ>);
+  p_groundsurface.reset  (new pcl::PointCloud<pcl::PointXYZ>);
   p_obstacles_OTHER.reset(new pcl::PointCloud<pcl::PointXYZ>);
 
 
@@ -151,9 +155,9 @@ int RANSACGrid()
   {
     v_bins[iBin].ground.gp_type = gpt_None; // init
 
-                                            // -------------------------------------------------------------------
-                                            // for debugging: filter all Bins except the one denoted in the config
-                                            // -------------------------------------------------------------------
+    // -------------------------------------------------------------------
+    // for debugging: filter all Bins except the one denoted in the config
+    // -------------------------------------------------------------------
     if ((paulacfg.iBIN_FILTER > 0) && (iBin != paulacfg.iBIN_FILTER)) continue;
 
     uint32 nSize = v_bins[iBin].cloud->points.size();

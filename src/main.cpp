@@ -286,6 +286,37 @@ int main(int argc, char** argv)
       std::cout << "arrow_r pressed" << std::endl;
     }
 */
+    if (io.KeysDown[32] == true) // Space
+    {
+      m_measPoints.clear();
+
+      if (process_Pointcloud() == -1) return (-1);// p_cloud, p_cloud_rgb);
+/*      RANSACGrid();
+      for (int j = 0; j<p_groundsurface->points.size(); j++)
+      {
+        pcl::PointXYZRGB prgb(80, 80, 80);
+        prgb.x = p_groundsurface->points[j].x;
+        prgb.y = p_groundsurface->points[j].y;
+        prgb.z = p_groundsurface->points[j].z;
+        p_cloud_rgb->push_back(prgb);
+      }
+*/
+      for (int j = 0; j<p_cloud_rgb->points.size(); j++)
+      {
+        {
+          MeasurementPoint3D pt;
+          pt.x = p_cloud_rgb->points[j].x;
+          pt.y = p_cloud_rgb->points[j].y;
+          pt.z = p_cloud_rgb->points[j].z;
+          pt.r = p_cloud_rgb->points[j].r;
+          pt.g = p_cloud_rgb->points[j].g;
+          pt.b = p_cloud_rgb->points[j].b;
+          m_measPoints.push_back(pt);
+        }
+      }
+
+      std::cout << "SPACE pressed" << std::endl;
+    }
 
 
     if (io.MouseClicked && (io.MouseDown[0] == true) && !io.WantCaptureMouse) // only if not over IMGui GUI-element (https://github.com/ocornut/imgui/issues/52)
