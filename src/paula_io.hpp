@@ -37,7 +37,7 @@ struct PointXYZI
   float intensity;
 };
 
-PointCloud p_cloud; // later move to paula.h
+PointCloud * p_cloud; // later move to paula.h
 
 int loadPCLbin(const std::string &filename, PointCloud &cloud)
 {

@@ -42,15 +42,15 @@ void pointcloud_random()
 int pointcloud_loadfrom_argv(int argc, char** argv)
 {
   std::string s(argv[1]);
-  if (loadPointCloud(s, p_cloud) == -1) return -1;
+  if (loadPointCloud(s, *p_cloud) == -1) return -1;
   
   // copy over, simplify later
-  for (int i = 0; i < p_cloud.size(); i++)
+  for (int i = 0; i < p_cloud->size(); i++)
   {
     MeasurementPoint3D pt;
     
     PointXYZ pt2;
-    pt2 = p_cloud[i];
+    pt2 = (*p_cloud)[i];
 
     pt.x = pt2.x;
     pt.y = pt2.y;
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
 {
   clock_t begin_time = clock();
 
-//  p_cloud = new PointCloud;
+  p_cloud = new PointCloud;
 
   if (argc == 1)
   {
@@ -328,7 +328,7 @@ int main(int argc, char** argv)
   }
 
   // Cleanup
-//  delete p_cloud;
+  delete p_cloud;
   
   ImGui_ImplGlfw_Shutdown();
   glfwTerminate();
