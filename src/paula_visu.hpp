@@ -182,6 +182,17 @@ void Paula_render_2Viewports(GLFWwindow* window)
   // Viewport 1
   // ----------
   glViewport(0, 0, windowWidth*0.5, windowHeight);
+  
+
+  // optional: different background color, s. https://community.khronos.org/t/viewport-background-color/57584/2
+  glScissor(0, 0, windowWidth*0.5, windowHeight);
+  glEnable(GL_SCISSOR_TEST);
+  glClearDepth(1.0);
+  glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glDisable(GL_SCISSOR_TEST);
+  // optional: different background color
+
 
   glMatrixMode(GL_PROJECTION_MATRIX);
   glLoadIdentity();

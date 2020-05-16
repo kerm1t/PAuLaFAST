@@ -70,8 +70,6 @@ int loadPCLbin(const std::string &filename, PointCloud &cloud)
     p.z = bincloud[i].z;
     cloud.push_back(p);
   }
-//  cloud.width = cloud.size();  // <-- that's the fix !!!
-//  cloud.height = 1;  // <-- that's the fix !!!
   return 0;
 }
 
@@ -88,8 +86,6 @@ int loadCSV_from_VeloView(const std::string &filename, PointCloud &cloud)
     p.z = ::atof((*loop)[2].c_str());
     cloud.push_back(p);
   }
-//  cloud.width = cloud.size();
-//  cloud.height = 1;
   return 0;
 }
 

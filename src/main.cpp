@@ -16,22 +16,10 @@
 #include <GL/glu.h>
 
 
-//#include <cmath>
-//#include <vector>
-//#include "linmath.h"
-//#include <time.h>
-
-
-//int pointcloud_load_process(std::string filename);
-
-
 static void error_callback(int error, const char* description)
 {
   fprintf(stderr, "Error %d: %s\n", error, description);
 }
-
-//#define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
-
 
 
 // a) fill with random data
@@ -67,9 +55,9 @@ int pointcloud_loadfrom_argv(int argc, char** argv)
     pt.x = pt2.x;
     pt.y = pt2.y;
     pt.z = pt2.z;
-    pt.r = rand() % 200;
-    pt.g = rand() % 200;
-    pt.b = rand() % 200;
+    pt.r = 99;
+    pt.g = 99;
+    pt.b = 99;
     m_measPoints.push_back(pt);
   }
 }
