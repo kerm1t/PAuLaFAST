@@ -1,1 +1,2 @@
-.\release\paulafast.exe D:\veloout_bin\velodyne\veloout000000.bin
+rem use .\release\paulafast.exe ...
+.\debug\paulafast.exe d:\veloout_bin\velodyne\veloout000000.bin

@@ -6,11 +6,9 @@
 
 #include <stdio.h>
 
-
 #include "paula.h"
-#include "paula_io.hpp" // include before Windows.h (max()), but AFTER! stdlib.h
-#include "paula_detect.hpp"
 #include "paula_visu.hpp"
+#include "paula_io.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -18,13 +16,13 @@
 #include <GL/glu.h>
 
 
-#include <cmath>
-#include <vector>
-#include "linmath.h"
-#include <time.h>
+//#include <cmath>
+//#include <vector>
+//#include "linmath.h"
+//#include <time.h>
 
 
-int pointcloud_load_process(std::string filename);
+//int pointcloud_load_process(std::string filename);
 
 
 static void error_callback(int error, const char* description)
@@ -32,7 +30,7 @@ static void error_callback(int error, const char* description)
   fprintf(stderr, "Error %d: %s\n", error, description);
 }
 
-#define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
+//#define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
 
 
@@ -55,89 +53,25 @@ void pointcloud_random()
 
 int pointcloud_loadfrom_argv(int argc, char** argv)
 {
-  if (paulacfg.available())
-  {
-    std::cout << ".cfg-version = " << paulacfg.cfg_file_vers << std::endl; // read .cfg first, maybe overwritten by commandline parameters
-  }
-  else
-  {
-    system("pause");
-    return -1;
-  }
-
-  if (argc == 1)
-  {
-    std::cout << "please start with " << PathFindFileName(argv[0]) << " [-b batch][-o output .pcd] <*.pcd|*.bin|*.csv> <*.pcd|*.bin|*.csv> ..." << std::endl;
-    return 0;
-  }
-  else if (argc > 1)
-  {
-    v_argv.clear();
-    for (int i = 1; i < argc; i++)
-    {
-      std::string sArgv(argv[i]);
-      if      (sArgv.compare("-b") == 0) b_batch_processing  = true;
-      else if (sArgv.compare("-o") == 0) paulacfg.write_OBST = true;
-      else if (sArgv.compare("-l") == 0) b_write_label       = true;
-      else v_argv.push_back(sArgv);
-    }
-  }
-
-  pointcloud_load_process(v_argv[iFile]);
-
-
-  // get all files in that directory (to browse through them)
-  std::string filename = v_argv[iFile];
-  std::string s = PathFindFileName(filename.c_str());
-  argv_pathname = filename.substr(0, filename.find(s));
-  std::cout << argv_pathname << std::endl;
-  read_directory(argv_pathname, v_files);
-  for (int i = 0; i<v_files.size(); i++)
-    std::cout << v_files[i] << std::endl;
-}
-
-
-int pointcloud_load_process(std::string filename) // b) load .pcd
-{
-  p_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
-  p_cloud_rgb.reset(new pcl::PointCloud<pcl::PointXYZRGB>); // output to visu
-
-  if (loadPointCloud(filename, *p_cloud) == -1) return -1;
-
-  m_measPoints.clear();
+  std::string s(argv[1]);
+  if (loadPointCloud(s, p_cloud) == -1) return -1;
   
-//#define DO_PROCESSING 1
-#if (DO_PROCESSING == 1)
-  if (process_Pointcloud() == -1) return (-1);// p_cloud, p_cloud_rgb);
+  // copy over, simplify later
+  for (int i = 0; i < p_cloud.size(); i++)
+  {
+    MeasurementPoint3D pt;
+    
+    PointXYZ pt2;
+    pt2 = p_cloud[i];
 
-  for (int j = 0; j<p_cloud_rgb->points.size(); j++)
-  {
-    {
-      MeasurementPoint3D pt;
-      pt.x = p_cloud_rgb->points[j].x;
-      pt.y = p_cloud_rgb->points[j].y;
-      pt.z = p_cloud_rgb->points[j].z;
-      pt.r = p_cloud_rgb->points[j].r;
-      pt.g = p_cloud_rgb->points[j].g;
-      pt.b = p_cloud_rgb->points[j].b;
-      m_measPoints.push_back(pt);
-    }
+    pt.x = pt2.x;
+    pt.y = pt2.y;
+    pt.z = pt2.z;
+    pt.r = rand() % 200;
+    pt.g = rand() % 200;
+    pt.b = rand() % 200;
+    m_measPoints.push_back(pt);
   }
-#else
-  for (int j = 0; j<p_cloud->points.size(); j++)
-  {
-    {
-      MeasurementPoint3D pt;
-      pt.x = p_cloud->points[j].x;
-      pt.y = p_cloud->points[j].y;
-      pt.z = p_cloud->points[j].z;
-      pt.r = 200;
-      pt.g = 200;
-      pt.b = 200;
-      m_measPoints.push_back(pt);
-    }
-  }
-#endif
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
@@ -186,6 +120,8 @@ int main(int argc, char** argv)
 {
   clock_t begin_time = clock();
 
+//  p_cloud = new PointCloud;
+
   if (argc == 1)
   {
     pointcloud_random();
@@ -229,12 +165,12 @@ int main(int argc, char** argv)
     ImGui_ImplGlfw_NewFrame();
     ImGuiIO& io = ImGui::GetIO(); // using IMGui's Mouse-/Keyb.-states (somehow ImGui seems to block GLfw's callback functions)
 
-
+/*
     ImGui::RadioButton("none",            &i_processing_step, 0);
     ImGui::RadioButton("RANSAC",          &i_processing_step, 1);
     ImGui::RadioButton("Outlier removal", &i_processing_step, 2);
     ImGui::RadioButton("Clustering",      &i_processing_step, 3);
-
+*/
 
 
 
@@ -274,8 +210,8 @@ int main(int argc, char** argv)
     if (io.KeysDown[65] == true) // A
     {
       std::cout << "A pressed" << std::endl;
-      if (isPointcloudFileExtension(v_files[iFile])) pointcloud_load_process(argv_pathname + v_files[iFile]);
-      if (iFile == v_files.size() - 1) iFile = 0; else iFile++;
+//      if (isPointcloudFileExtension(v_files[iFile])) pointcloud_load_process(argv_pathname + v_files[iFile]);
+//      if (iFile == v_files.size() - 1) iFile = 0; else iFile++;
     }
 /*    if (io.KeysDown[27] == true) // arrow left
     {
@@ -290,7 +226,7 @@ int main(int argc, char** argv)
     {
       m_measPoints.clear();
 
-      if (process_Pointcloud() == -1) return (-1);// p_cloud, p_cloud_rgb);
+//      if (process_Pointcloud() == -1) return (-1);// p_cloud, p_cloud_rgb);
 /*      RANSACGrid();
       for (int j = 0; j<p_groundsurface->points.size(); j++)
       {
@@ -301,7 +237,7 @@ int main(int argc, char** argv)
         p_cloud_rgb->push_back(prgb);
       }
 */
-      for (int j = 0; j<p_cloud_rgb->points.size(); j++)
+/*      for (int j = 0; j<p_cloud_rgb->points.size(); j++)
       {
         {
           MeasurementPoint3D pt;
@@ -316,6 +252,7 @@ int main(int argc, char** argv)
       }
 
       std::cout << "SPACE pressed" << std::endl;
+*/
     }
 
 
@@ -368,7 +305,7 @@ int main(int argc, char** argv)
       ImGui::Text("#Points"); ImGui::NextColumn();
       ImGui::Text("Class"); ImGui::NextColumn();
       ImGui::Separator();
-      for (int i = 0; i < v_BBoxes.size(); i++)
+/*      for (int i = 0; i < v_BBoxes.size(); i++)
       {
         if (v_BBoxes[i].objtype == obj_unknown) continue;
         
@@ -389,75 +326,11 @@ int main(int argc, char** argv)
         ImGui::Text(s_obj.c_str()); ImGui::NextColumn();
         //      ImGui::Text("...."); ImGui::NextColumn();
       }
-      ImGui::Columns(1);
+*/      ImGui::Columns(1);
       ImGui::Separator();
       ImGui::TreePop();
     }
     ImGui::End();
-
-    // write coordinates of selected obj to vertexarray + colorarray
-    if ((v_BBoxes.size() > 0) && (selected >= 0))
-    {
-      // P0 +--+ P1
-      //    |  |
-      // P3 +--+ P2
-      objSelected.p[0].x = v_BBoxes[selected].AABB.max_point.x;
-      objSelected.p[0].y = v_BBoxes[selected].AABB.max_point.y;
-      objSelected.p[0].z = 0.0;
-      objSelected.p[0].r = 255;
-      objSelected.p[0].g = 255;
-      objSelected.p[0].b = 0;
-
-      objSelected.p[1].x = v_BBoxes[selected].AABB.max_point.x;
-      objSelected.p[1].y = v_BBoxes[selected].AABB.min_point.y;
-      objSelected.p[1].z = 0.0;
-      objSelected.p[1].r = 255;
-      objSelected.p[1].g = 255;
-      objSelected.p[1].b = 0;
-
-      objSelected.p[2].x = v_BBoxes[selected].AABB.min_point.x;
-      objSelected.p[2].y = v_BBoxes[selected].AABB.min_point.y;
-      objSelected.p[2].z = 0.0;
-      objSelected.p[2].r = 255;
-      objSelected.p[2].g = 255;
-      objSelected.p[2].b = 0;
-
-      objSelected.p[3].x = v_BBoxes[selected].AABB.min_point.x;
-      objSelected.p[3].y = v_BBoxes[selected].AABB.max_point.y;
-      objSelected.p[3].z = 0.0;
-      objSelected.p[3].r = 255;
-      objSelected.p[3].g = 255;
-      objSelected.p[3].b = 0;
-    }
-
-
-    groundplane4picking.p[0].x = 50;
-    groundplane4picking.p[0].y = 50;
-    groundplane4picking.p[0].z = 0.0;
-    groundplane4picking.p[0].r = 222;
-    groundplane4picking.p[0].g = 222;
-    groundplane4picking.p[0].b = 222;
-
-    groundplane4picking.p[1].x = 50;
-    groundplane4picking.p[1].y = -50;
-    groundplane4picking.p[1].z = 0.0;
-    groundplane4picking.p[1].r = 222;
-    groundplane4picking.p[1].g = 222;
-    groundplane4picking.p[1].b = 222;
-
-    groundplane4picking.p[2].x = -50;
-    groundplane4picking.p[2].y = -50;
-    groundplane4picking.p[2].z = 0.0;
-    groundplane4picking.p[2].r = 222;
-    groundplane4picking.p[2].g = 222;
-    groundplane4picking.p[2].b = 222;
-
-    groundplane4picking.p[3].x = -50;
-    groundplane4picking.p[3].y = 50;
-    groundplane4picking.p[3].z = 0.0;
-    groundplane4picking.p[3].r = 222;
-    groundplane4picking.p[3].g = 222;
-    groundplane4picking.p[3].b = 222;
 
 
 
@@ -467,6 +340,8 @@ int main(int argc, char** argv)
   }
 
   // Cleanup
+//  delete p_cloud;
+  
   ImGui_ImplGlfw_Shutdown();
   glfwTerminate();
 

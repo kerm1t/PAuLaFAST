@@ -1,6 +1,9 @@
 #ifndef CSV_HXX
 #define CSV_HXX
 
+#include <string>
+#include <sstream>
+
 // https://stackoverflow.com/questions/1120140/how-can-i-read-and-parse-csv-files-in-c?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
 class CSVRow
 {

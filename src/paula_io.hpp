@@ -1,12 +1,17 @@
 #pragma once
 
-#include "paula_classify.hpp" // v_BBoxes
 #include "kitty_evaluate_object.hpp"
 
 #include "Vec3f.hxx" // to be included after pcl/eigen
 #include "CSV.hxx"
+#include <vector>
 
 #include <windows.h> // read_directory()
+#include <iostream>
+#include <fstream>
+#include <sstream> // save
+
+#include <time.h>
 
 bool b_Filechanged = false;
 
@@ -16,30 +21,39 @@ int iFile = 0;                   // current position in that v_argv vector of .p
 
 typedef std::vector<string> stringvec;
 stringvec v_files;
-
-struct xyzi
+struct PointXYZ
 {
   float x;
   float y;
   float z;
-  float i; // intensity
+};
+typedef std::vector<PointXYZ> PointCloud;
+
+struct PointXYZI
+{
+  float x;
+  float y;
+  float z;
+  float intensity;
 };
 
-int loadPCLbin(const std::string &filename, pcl::PointCloud<pcl::PointXYZ> &cloud)
+PointCloud p_cloud; // later move to paula.h
+
+int loadPCLbin(const std::string &filename, PointCloud &cloud)
 {
   // https://stackoverflow.com/questions/19614581/reading-floating-numbers-from-bin-file-continuosly-and-outputting-in-console-win
 
   float f;
   std::ifstream fin(filename, std::ios::binary);
   int i = 0;
-  xyzi bincoord;
-  std::vector<xyzi> bincloud;
+  PointXYZI bincoord;
+  std::vector<PointXYZI> bincloud;
   while (fin.read(reinterpret_cast<char*>(&f), sizeof(float)))
   {
     if (i == 0) bincoord.x = f;
     if (i == 1) bincoord.y = f;
     if (i == 2) bincoord.z = f;
-    if (i == 3) bincoord.i = f;
+    if (i == 3) bincoord.intensity = f;
     i++;
     if (i == 4)
     {
@@ -50,32 +64,32 @@ int loadPCLbin(const std::string &filename, pcl::PointCloud<pcl::PointXYZ> &clou
   fin.close();
   for (int i = 0; i < bincloud.size(); i++)
   {
-    pcl::PointXYZ p;
+    PointXYZ p;
     p.x = bincloud[i].x;
     p.y = bincloud[i].y;
     p.z = bincloud[i].z;
     cloud.push_back(p);
   }
-  cloud.width = cloud.size();  // <-- that's the fix !!!
-  cloud.height = 1;  // <-- that's the fix !!!
+//  cloud.width = cloud.size();  // <-- that's the fix !!!
+//  cloud.height = 1;  // <-- that's the fix !!!
   return 0;
 }
 
 
-int loadCSV_from_VeloView(const std::string &filename, pcl::PointCloud<pcl::PointXYZ> &cloud)
+int loadCSV_from_VeloView(const std::string &filename, PointCloud &cloud)
 {
   std::ifstream file(filename);
 
   for (CSVIterator loop(file); loop != CSVIterator(); ++loop)
   {
-    pcl::PointXYZ p;
+    PointXYZ p;
     p.x = ::atof((*loop)[0].c_str());
     p.y = ::atof((*loop)[1].c_str());
     p.z = ::atof((*loop)[2].c_str());
     cloud.push_back(p);
   }
-  cloud.width = cloud.size();
-  cloud.height = 1;
+//  cloud.width = cloud.size();
+//  cloud.height = 1;
   return 0;
 }
 
@@ -89,7 +103,7 @@ bool isPointcloudFileExtension(const std::string &filename_only)
     );
 }
 
-int loadPointCloud(const std::string &filename, pcl::PointCloud<pcl::PointXYZ> &cloud)
+int loadPointCloud(const std::string &filename, PointCloud &cloud)
 {
   s_pointcloudfile pf;
 
@@ -104,49 +118,49 @@ int loadPointCloud(const std::string &filename, pcl::PointCloud<pcl::PointXYZ> &
   if (pf.file_ext.compare(".bin") == 0) pf.ft = ft_BIN;
   if (pf.file_ext.compare(".pcd") == 0) pf.ft = ft_PCD;
   if (pf.file_ext.compare(".csv") == 0) pf.ft = ft_CSV;  // Veloview output
-  pclfile = pf; // set global var!
+//  pclfile = pf; // set global var!
 
   if (pf.ft == ft_BIN)
   {
-    if (loadPCLbin(filename, *p_cloud) == -1)
+    if (loadPCLbin(filename, cloud) == -1)
     {
-      PCL_ERROR("Couldn't read file .bin\n");
+//      PCL_ERROR("Couldn't read file .bin\n");
       system("pause");
       return (-1);
     }
   }
-  if (pf.ft == ft_PCD)
+/*  if (pf.ft == ft_PCD)
   {
     if (pcl::io::loadPCDFile<pcl::PointXYZ>(filename, *p_cloud) == -1)
     {
-      PCL_ERROR("Couldn't read file .pcd\n");
+//      PCL_ERROR("Couldn't read file .pcd\n");
       system("pause");
       return (-1);
     }
   }
-  if (pf.ft == ft_CSV)
+*/  if (pf.ft == ft_CSV)
   {
-    if (loadCSV_from_VeloView(filename, *p_cloud) == -1)
+    if (loadCSV_from_VeloView(filename, cloud) == -1)
     {
-      PCL_ERROR("Couldn't read file .csv\n");
+//      PCL_ERROR("Couldn't read file .csv\n");
       system("pause");
       return (-1);
     }
   }
-  std::cout << "Loaded " << p_cloud->width * p_cloud->height << " data points from .pcd/.bin with the following fields: " << std::endl;
-  std::cout << "Load__ = " << float(clock() - begin_time) / CLOCKS_PER_SEC << " [s]" << std::endl;
+  std::cout << "Loaded " << cloud.size() << " data points from .pcd/.bin with the following fields: " << std::endl;
+//  std::cout << "Load__ = " << float(clock() - begin_time) / CLOCKS_PER_SEC << " [s]" << std::endl;
   return 0;
 }
 
-int savePCLbin(const std::string &filename, pcl::PointCloud<pcl::PointXYZ> &cloud)
+int savePCLbin(const std::string &filename, PointCloud &cloud)
 {
   std::ofstream fout(filename, std::ios::binary);
-  for (int j = 0; j < cloud.points.size(); j++)
+  for (int j = 0; j < cloud.size(); j++)
   {
-    pcl::PointXYZI pi(255);
-    pi.x = cloud.points[j].x;
-    pi.y = cloud.points[j].y;
-    pi.z = cloud.points[j].z;
+    PointXYZI pi{255,255,255,255};
+    pi.x = cloud[j].x;
+    pi.y = cloud[j].y;
+    pi.z = cloud[j].z;
     float f_p[4];
     f_p[0] = pi.x;
     f_p[1] = pi.y;
@@ -159,6 +173,7 @@ int savePCLbin(const std::string &filename, pcl::PointCloud<pcl::PointXYZ> &clou
   return 0;
 }
 
+#if 0
 int saveLabel(const std::string &filename) // store objects (start with cars) ín Kitty Label Format
 {
   std::ofstream outfile;
@@ -221,6 +236,7 @@ int saveLabel(const std::string &filename) // store objects (start with cars) ín
   std::cout << "Labels written to " << filename << std::endl;
   return 0;
 }
+#endif
 
 // return angle of plane normal vN to vUp (if vN is facing upward) or vDown
 float32 planeAngleRAD(Vec3f vN)

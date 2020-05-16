@@ -6,7 +6,7 @@
 #include <GL/glu.h>
 
 #include "paula.h"
-
+#include <vector>
 
 class vehicle
 {
