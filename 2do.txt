@@ -1,5 +1,5 @@
-2020-5-15
+2020-5-16
 - sukzessives Laden wiederherstellen
 - Neuerungen von LQB uebernehmen (Maussteuerung)
-- load HRL pointcloud (non-binary)
++ load HRL pointcloud (non-binary)
 + wieder ans Laufen bringen, nach Entfernen von PCL (Pointcloud library)

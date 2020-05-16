@@ -44,8 +44,8 @@ int pointcloud_loadfrom_argv(int argc, char** argv)
   std::string s(argv[1]);
   if (loadPointCloud(s, *p_cloud) == -1) return -1;
   
-  // copy over, simplify later
-  for (int i = 0; i < p_cloud->size(); i++)
+  // 2do: copy over, simplify later
+  for (int i = 0; i < p_cloud->size(); i++) // this for loop can be spared! MeasurmentPoint3D is proprietary, replace with PointXYZ
   {
     MeasurementPoint3D pt;
     
@@ -60,6 +60,7 @@ int pointcloud_loadfrom_argv(int argc, char** argv)
     pt.b = 99;
     m_measPoints.push_back(pt);
   }
+  return 0;
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)

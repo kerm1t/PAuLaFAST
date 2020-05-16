@@ -39,7 +39,7 @@ struct PointXYZI
 
 PointCloud * p_cloud; // later move to paula.h
 
-int loadPCLbin(const std::string &filename, PointCloud &cloud)
+int loadPCDbin(const std::string &filename, PointCloud &cloud)
 {
   // https://stackoverflow.com/questions/19614581/reading-floating-numbers-from-bin-file-continuosly-and-outputting-in-console-win
 
@@ -73,6 +73,87 @@ int loadPCLbin(const std::string &filename, PointCloud &cloud)
   return 0;
 }
 
+int loadPCDFile(const std::string &filename, PointCloud &cloud) // this can only read ASCII content files!, takes 0.8sec to load a 5MB .PCD (release build)
+{
+  FILE *f;
+  char line[255];
+  char tmp[55];
+  char tmp2[55];
+  char tmp3[55];
+  float coord[4];
+  bool bheader = true;
+
+  fopen_s(&f, filename.c_str(), "r");
+  while (fgets(line, sizeof(line), f))
+  {
+    if (bheader) sscanf(line, "%s %s %s", tmp, tmp2, tmp3);
+
+    if (!bheader)
+    {
+      sscanf(line, "%f %f %f", &coord[0], &coord[1], &coord[2]);
+      PointXYZ p;
+      p.x = coord[0];
+      p.y = coord[1];
+      p.z = coord[2];
+      cloud.push_back(p);
+    }
+
+    if (bheader)
+      if (std::string(tmp) == "DATA")// && (std::string(tmp2) == "ascii")) // omitting the "ascii" seems considerably faster !?
+        bheader = false;
+  }
+  fclose(f);
+  return 0;
+}
+
+int loadPCDFile_fast(const std::string &filename, PointCloud &cloud) // this seems to be only fast, loading into char[]
+{
+  std::ifstream in(filename, std::ios::in | std::ios::binary);
+  if (in)
+  {
+    std::string contents;
+    in.seekg(0, std::ios::end);
+    contents.resize(in.tellg());
+    in.seekg(0, std::ios::beg);
+    in.read(&contents[0], contents.size());
+    in.close();
+    const char * testCharArray = contents.c_str();
+
+    std::vector<std::string> lines; // 2do: pre-size this!
+    std::string line;
+    bool bheader = true;
+    float coord[4];
+    int other[3];
+    for (int i = 0; i < contents.size(); i++)                           // THIS
+    {                                                                   // IS
+      line = line + contents[i];                                        // REALLY
+      if ((i > 0) && (contents[i-1] == '\r') && (contents[i] == '\n'))  // SLOW!!
+      {
+        lines.push_back(line);
+
+/*        if (!bheader)
+        {
+          sscanf(line.c_str(), "%f %f %f %f %d %d %d\r\n", &coord[0], &coord[1], &coord[2], &coord[3], &other[0], &other[1], &other[2]);
+          PointXYZ p;
+          p.x = coord[0];
+          p.y = coord[1];
+          p.z = coord[2];
+          cloud.push_back(p);
+        }
+*/
+        if (bheader)
+          if ((line[0] == 'D') && (line[1] == 'A') && (line[2] == 'T') && (line[3] == 'A'))
+            bheader = false;
+
+        line = "";
+      }
+    }
+    
+    return 0;
+  }
+  throw(errno);
+  return -1;
+}
 
 int loadCSV_from_VeloView(const std::string &filename, PointCloud &cloud)
 {
@@ -118,23 +199,25 @@ int loadPointCloud(const std::string &filename, PointCloud &cloud)
 
   if (pf.ft == ft_BIN)
   {
-    if (loadPCLbin(filename, cloud) == -1)
+    if (loadPCDbin(filename, cloud) == -1)
     {
 //      PCL_ERROR("Couldn't read file .bin\n");
       system("pause");
       return (-1);
     }
   }
-/*  if (pf.ft == ft_PCD)
+  if (pf.ft == ft_PCD)
   {
-    if (pcl::io::loadPCDFile<pcl::PointXYZ>(filename, *p_cloud) == -1)
+//    if (pcl::io::loadPCDFile<pcl::PointXYZ>(filename, *p_cloud) == -1)
+// really slow atm    if (loadPCDFile_fast(filename, *p_cloud) == -1)
+    if (loadPCDFile(filename, *p_cloud) == -1)
     {
 //      PCL_ERROR("Couldn't read file .pcd\n");
       system("pause");
       return (-1);
     }
   }
-*/  if (pf.ft == ft_CSV)
+  if (pf.ft == ft_CSV)
   {
     if (loadCSV_from_VeloView(filename, cloud) == -1)
     {
