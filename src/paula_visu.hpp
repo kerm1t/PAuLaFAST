@@ -120,10 +120,6 @@ void render(int viewport, int ptsize)
 
 void Paula_render_1Viewport(GLFWwindow* window)
 {
-//  static float dist = 30.f;
-//  ImGui::SliderFloat("dist", &dist, 0.0, 100.0);
-//  static float rotspeed = 0;// .007f;
-//  ImGui::SliderFloat("rot.speed", &rotspeed, 0.0, 1.0);
   ImGui::SliderInt("pt.size", &m_pointSize, 1, 12);
 
 
@@ -152,17 +148,11 @@ void Paula_render_1Viewport(GLFWwindow* window)
   glRotatef( 90.0f + cam[0].rot.z, 0, 0, 1); // rotate once
 
   render(0, m_pointSize);
-
-  //  alpha += rotspeed;// 0.05;
 }
 
 // https://stackoverflow.com/questions/726379/how-to-use-multiple-viewports-in-opengl?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
 void Paula_render_2Viewports(GLFWwindow* window)
 {
-//  static float dist = 30.f;
-//  ImGui::SliderFloat("dist", &dist, 0.0, 100.0);
-//  static float rotspeed = 0;// .007f;
-//  ImGui::SliderFloat("rot.speed", &rotspeed, 0.0, 1.0);
   ImGui::SliderInt("pt.size", &m_pointSize, 1, 12);
 
 
@@ -210,7 +200,7 @@ void Paula_render_2Viewports(GLFWwindow* window)
 //  Vec3f eye = Vec3f(0, 0, -dist);// -15);
 //  gluLookAt(eye.x, eye.y, eye.z, 0, 0, 0, 0.0, 1.0, 0.0); // Modelview Matrix, s. https://www.opengl.org/archives/resources/faq/technical/viewing.htm
 
-  render(0, 3);
+  render(0, m_pointSize);
 
 
   // ----------
@@ -227,15 +217,10 @@ void Paula_render_2Viewports(GLFWwindow* window)
 //  gluLookAt(eye.x, eye.y, eye.z, 0, 0, 0, 0.0, 1.0, 0.0); // Modelview Matrix, s. https://www.opengl.org/archives/resources/faq/technical/viewing.htm
 
 
-//  static float alpha = 0;
-//  glRotatef(alpha, 0, 1, 0); // attempt to rotate cube
-
   glTranslatef(0.0f, 0.0f, -30.0f + cam[1].trans.z);
   glRotatef(cam[1].rot.x, 1, 0, 0); // rotate once
   glRotatef(180.0f + cam[1].rot.y, 0, 1, 0); // rotate once
   glRotatef(90.0f + cam[1].rot.z, 0, 0, 1); // rotate once
 
   render(1, m_pointSize);
-
-//  alpha += rotspeed;
 }

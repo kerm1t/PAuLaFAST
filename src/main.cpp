@@ -36,6 +36,10 @@ void pointcloud_random()
     pt.g = rand() % 200;
     pt.b = rand() % 200;
     m_measPoints[0].push_back(pt);
+    pt.r = 99;
+    pt.g = 99;
+    pt.b = 99;
+    m_measPoints[1].push_back(pt);
   }
 }
 
