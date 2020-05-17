@@ -11,6 +11,6 @@ How to build:
 
 Features
 - loading of .PCD as binary or ascii
-- 2 viewports to show processing stages or for comparison of two pointclouds.
+- 2 viewports to show processing stages or to compare pointclouds
 - ImGUI
 - modern OpenGL pipeline (GLfw)
