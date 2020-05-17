@@ -35,7 +35,7 @@ void pointcloud_random()
     pt.r = rand() % 200;
     pt.g = rand() % 200;
     pt.b = rand() % 200;
-    m_measPoints.push_back(pt);
+    m_measPoints[0].push_back(pt);
   }
 }
 
@@ -58,7 +58,11 @@ int pointcloud_loadfrom_argv(int argc, char** argv)
     pt.r = 99;
     pt.g = 99;
     pt.b = 99;
-    m_measPoints.push_back(pt);
+    m_measPoints[0].push_back(pt);
+
+    // fake: non-ground points
+    if (pt2.z > 0.2f)
+      m_measPoints[1].push_back(pt);
   }
   return 0;
 }
@@ -187,7 +191,7 @@ int main(int argc, char** argv)
 
 
 
-    static int nViewports = 1;
+    static int nViewports = 2;
     ImGui::SliderInt("#Viewports", &nViewports, 1, 2);
 
 
@@ -213,7 +217,7 @@ int main(int argc, char** argv)
 */
     if (io.KeysDown[32] == true) // Space
     {
-      m_measPoints.clear();
+      m_measPoints[0].clear();
 
 //      if (process_Pointcloud() == -1) return (-1);// p_cloud, p_cloud_rgb);
 /*      RANSACGrid();
@@ -244,13 +248,36 @@ int main(int argc, char** argv)
 */
     }
 
+    int viewport;
+    if (nViewports == 2)
+    {
+      GLint windowWidth, windowHeight;
+      glfwGetWindowSize(window, &windowWidth, &windowHeight);
+      viewport = (mousepos.x > windowWidth*0.5f);
+    }
+    else viewport = 0;
 
+    // mouse to
+    // a) control camera
+    mousepos = { io.MousePos.x, io.MousePos.y };
     if (io.MouseClicked && (io.MouseDown[0] == true) && !io.WantCaptureMouse) // only if not over IMGui GUI-element (https://github.com/ocornut/imgui/issues/52)
     {
-      std::cout << "left mouse clicked" << std::endl; 
-      std::cout << io.MouseClickedPos[0].x << "," << io.MouseClickedPos[0].y << std::endl;
+      cam[viewport].rot.y += io.MouseDelta.x;
+      cam[viewport].rot.x += io.MouseDelta.y;
+    }
+    cam[viewport].trans.z += (float)io.MouseWheel*3.5f;
+    // b) select focussed pixel
+    if (io.MouseClicked && (io.MouseDown[0] == true) && !io.WantCaptureMouse) // only if not over IMGui GUI-element (https://github.com/ocornut/imgui/issues/52)
+    {
       Vec3f mouseclicked3d = Mouse2Dto3D(io.MouseClickedPos[0].x, io.MouseClickedPos[0].y);
-      std::cout << mouseclicked3d.x << "," << mouseclicked3d.y << "," << mouseclicked3d.z << std::endl;
+    }
+    // c) do other stuff
+    if (io.MouseClicked && (io.MouseDown[0] == true) && !io.WantCaptureMouse) // only if not over IMGui GUI-element (https://github.com/ocornut/imgui/issues/52)
+    {
+//      std::cout << "left mouse clicked" << std::endl; 
+//      std::cout << io.MouseClickedPos[0].x << "," << io.MouseClickedPos[0].y << std::endl;
+      Vec3f mouseclicked3d = Mouse2Dto3D(io.MouseClickedPos[0].x, io.MouseClickedPos[0].y);
+//      std::cout << mouseclicked3d.x << "," << mouseclicked3d.y << "," << mouseclicked3d.z << std::endl;
 
       mouseFrame.p[0].x = mouseclicked3d.x;
       mouseFrame.p[0].y = mouseclicked3d.y;
@@ -260,7 +287,7 @@ int main(int argc, char** argv)
       mouseFrame.p[0].b = 0;
 
       Vec3f mouse3d = Mouse2Dto3D(io.MousePos.x, io.MousePos.y);
-      std::cout << mouse3d.x << "," << mouse3d.y << "," << mouse3d.z << std::endl;
+//      std::cout << mouse3d.x << "," << mouse3d.y << "," << mouse3d.z << std::endl;
       mouseFrame.p[1].x = mouseclicked3d.x;
       mouseFrame.p[1].y = mouse3d.y;
       mouseFrame.p[1].z = mouse3d.z;

@@ -8,6 +8,9 @@
 #include "paula.h"
 #include <vector>
 
+pt2d mousepos;
+camera cam[2]; // left and right viewport, might be more later
+
 class vehicle
 {
 public:
@@ -53,7 +56,7 @@ struct Object2D
 };
 
 int m_pointSize = 3;
-meas_point_vector m_measPoints; // for each sensor
+meas_point_vector m_measPoints[2]; // for each viewport
 Object2D objSelected;
 Object2D groundplane4picking;
 MeasurementPoint3D Cursor;
@@ -61,7 +64,7 @@ Object2D mouseFrame;
 
 
 
-void render(int ptsize)
+void render(int viewport, int ptsize)
 {
   glPushMatrix();
 
@@ -73,21 +76,21 @@ void render(int ptsize)
   glEnableClientState(GL_VERTEX_ARRAY);
 
 
-  if (m_measPoints.size() > 0)
+  if (m_measPoints[viewport].size() > 0)
   {
-    glVertexPointer(3, GL_FLOAT, sizeof(MeasurementPoint3D), &m_measPoints[0]);
-    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(MeasurementPoint3D), &m_measPoints[0].r); // r + size(3)
-    glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(m_measPoints.size()));
+    glVertexPointer(3, GL_FLOAT, sizeof(MeasurementPoint3D), &m_measPoints[viewport][0]);
+    glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(MeasurementPoint3D), &m_measPoints[viewport][0].r); // r + size(3)
+    glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(m_measPoints[viewport].size()));
   }
 
   //  if (objSelected...)
-  {
+/*  {
     glVertexPointer(3, GL_FLOAT, sizeof(MeasurementPoint3D), &objSelected.p[0]);
     glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(MeasurementPoint3D), &objSelected.p[0].r); // r + size(3)
     glDrawArrays(GL_QUADS, 0, static_cast<GLsizei>(4));
   }
   // groundplane 4 picking
-/*  {
+  {
     glVertexPointer(3, GL_FLOAT, sizeof(MeasurementPoint3D), &groundplane4picking.p[0]);
     glColorPointer(3, GL_UNSIGNED_BYTE, sizeof(MeasurementPoint3D), &groundplane4picking.p[0].r); // r + size(3)
     glDrawArrays(GL_QUADS, 0, static_cast<GLsizei>(4));
@@ -117,10 +120,10 @@ void render(int ptsize)
 
 void Paula_render_1Viewport(GLFWwindow* window)
 {
-  static float dist = 30.f;
-  ImGui::SliderFloat("dist", &dist, 0.0, 100.0);
-  static float rotspeed = 0;// .007f;
-  ImGui::SliderFloat("rot.speed", &rotspeed, 0.0, 1.0);
+//  static float dist = 30.f;
+//  ImGui::SliderFloat("dist", &dist, 0.0, 100.0);
+//  static float rotspeed = 0;// .007f;
+//  ImGui::SliderFloat("rot.speed", &rotspeed, 0.0, 1.0);
   ImGui::SliderInt("pt.size", &m_pointSize, 1, 12);
 
 
@@ -141,16 +144,14 @@ void Paula_render_1Viewport(GLFWwindow* window)
   glLoadIdentity();
   gluPerspective(60, (double)windowWidth / (double)windowHeight, 0.1, 150);
 
-  glMatrixMode(GL_MODELVIEW_MATRIX);
-  //  glLoadIdentity();
-  glTranslatef(0, 0, -dist);// -15); <-- not compatible with picking
-                            //  Vec3f eye = Vec3f(0, 0, -dist);// -15);
-                            //  gluLookAt(eye.x, eye.y, eye.z, 0, 0, 0, 0.0, 1.0, 0.0); // Modelview Matrix, s. https://www.opengl.org/archives/resources/faq/technical/viewing.htm
+  glMatrixMode(GL_MODELVIEW_MATRIX); // kein grosser Unterschied, wenn ich das hier hinter die Rot, Trans setze
 
-                            //  static float alpha = 0;
-                            //  glRotatef(alpha, 0, 1, 0); // attempt to rotate cube
+  glTranslatef(0.0f, 0.0f, -30.0f + cam[0].trans.z);
+  glRotatef(         cam[0].rot.x, 1, 0, 0); // rotate once
+  glRotatef(180.0f + cam[0].rot.y, 0, 1, 0); // rotate once
+  glRotatef( 90.0f + cam[0].rot.z, 0, 0, 1); // rotate once
 
-  render(m_pointSize);
+  render(0, m_pointSize);
 
   //  alpha += rotspeed;// 0.05;
 }
@@ -158,10 +159,10 @@ void Paula_render_1Viewport(GLFWwindow* window)
 // https://stackoverflow.com/questions/726379/how-to-use-multiple-viewports-in-opengl?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
 void Paula_render_2Viewports(GLFWwindow* window)
 {
-  static float dist = 30.f;
-  ImGui::SliderFloat("dist", &dist, 0.0, 100.0);
-  static float rotspeed = 0;// .007f;
-  ImGui::SliderFloat("rot.speed", &rotspeed, 0.0, 1.0);
+//  static float dist = 30.f;
+//  ImGui::SliderFloat("dist", &dist, 0.0, 100.0);
+//  static float rotspeed = 0;// .007f;
+//  ImGui::SliderFloat("rot.speed", &rotspeed, 0.0, 1.0);
   ImGui::SliderInt("pt.size", &m_pointSize, 1, 12);
 
 
@@ -199,11 +200,17 @@ void Paula_render_2Viewports(GLFWwindow* window)
   gluPerspective(60, (double)windowWidth*0.5 / (double)windowHeight, 0.1, 150);
 
   glMatrixMode(GL_MODELVIEW_MATRIX);
-  //  glTranslatef(0, 0, -dist);
-  Vec3f eye = Vec3f(0, 0, -dist);// -15);
-  gluLookAt(eye.x, eye.y, eye.z, 0, 0, 0, 0.0, 1.0, 0.0); // Modelview Matrix, s. https://www.opengl.org/archives/resources/faq/technical/viewing.htm
 
-  render(3);
+  glTranslatef(0.0f, 0.0f, -30.0f + cam[0].trans.z);
+  glRotatef(cam[0].rot.x, 1, 0, 0); // rotate once
+  glRotatef(180.0f + cam[0].rot.y, 0, 1, 0); // rotate once
+  glRotatef(90.0f + cam[0].rot.z, 0, 0, 1); // rotate once
+
+  //  glTranslatef(0, 0, -dist);
+//  Vec3f eye = Vec3f(0, 0, -dist);// -15);
+//  gluLookAt(eye.x, eye.y, eye.z, 0, 0, 0, 0.0, 1.0, 0.0); // Modelview Matrix, s. https://www.opengl.org/archives/resources/faq/technical/viewing.htm
+
+  render(0, 3);
 
 
   // ----------
@@ -217,14 +224,18 @@ void Paula_render_2Viewports(GLFWwindow* window)
 
   glMatrixMode(GL_MODELVIEW_MATRIX);
   //  glTranslatef(0, 0, -dist); // 2do, fix!! x-shift due to Viewports
-  gluLookAt(eye.x, eye.y, eye.z, 0, 0, 0, 0.0, 1.0, 0.0); // Modelview Matrix, s. https://www.opengl.org/archives/resources/faq/technical/viewing.htm
+//  gluLookAt(eye.x, eye.y, eye.z, 0, 0, 0, 0.0, 1.0, 0.0); // Modelview Matrix, s. https://www.opengl.org/archives/resources/faq/technical/viewing.htm
 
 
-  static float alpha = 0;
-  glRotatef(alpha, 0, 1, 0); // attempt to rotate cube
+//  static float alpha = 0;
+//  glRotatef(alpha, 0, 1, 0); // attempt to rotate cube
 
+  glTranslatef(0.0f, 0.0f, -30.0f + cam[1].trans.z);
+  glRotatef(cam[1].rot.x, 1, 0, 0); // rotate once
+  glRotatef(180.0f + cam[1].rot.y, 0, 1, 0); // rotate once
+  glRotatef(90.0f + cam[1].rot.z, 0, 0, 1); // rotate once
 
-  render(m_pointSize);
+  render(1, m_pointSize);
 
-  alpha += rotspeed;
+//  alpha += rotspeed;
 }

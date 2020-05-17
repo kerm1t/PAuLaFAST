@@ -1,5 +1,9 @@
+2020-5-17
++ 2 viewports fully implemented, showing two different pointcloud (steps)
+
 2020-5-16
+- rotiert nur um koordinaten-zentrum, soll aber um position drehen
 - sukzessives Laden wiederherstellen
-- Neuerungen von LQB uebernehmen (Maussteuerung)
++ Neuerungen von LQB uebernehmen (Maussteuerung)
 + load HRL pointcloud (non-binary)
 + wieder ans Laufen bringen, nach Entfernen von PCL (Pointcloud library)

@@ -14,6 +14,27 @@
 
 #include "glob_type.h"
 
+// (0) base structures
+struct pt2d
+{
+  float x;
+  float y;
+};
+
+struct pt3d
+{
+  float x;
+  float y;
+  float z;
+};
+
+class camera
+{
+public:
+  pt3d rot;
+  pt3d trans;
+};
+
 //#include "paula_cfg.hpp"
 //#include "paula_cfg_reader.h"
 
