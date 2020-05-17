@@ -1,6 +1,7 @@
-PAuLaFAST X86
-(PCL+ImGUI+3d Gfx)
-=====
+Pointcloud AutoLabeling
+=======================
+
+![PAuLaFAST Screenshot](https://github.com/kerm1t/PAuLaFAST/blob/master/img/2020-5-17.png)
 
 How to build:
 
@@ -8,9 +9,8 @@ How to build:
     cd build
     cmake ..
 
-A proper CMake project is setup for Visual Studio X86.
-
-glew (and the Shader version of OpenGL) has been omitted for now.
-
-However, PCL is currently for X86 (32Bit), so we need to change that.
-Ok, that was simple, just getting the win32 version from GLfw's website (http://www.glfw.org/download.html) and rebuild.
+Features
+- loading of .PCD as binary or ascii
+- 2 viewports to show processing stages or for comparison of two pointclouds.
+- ImGUI
+- modern OpenGL pipeline (GLfw)
