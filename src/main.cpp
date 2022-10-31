@@ -15,6 +15,9 @@
 #include <Windows.h>
 #include <GL/glu.h>
 
+// c) RANSAC
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/sample_consensus/sac_model_plane.h>
 
 static void error_callback(int error, const char* description)
 {
