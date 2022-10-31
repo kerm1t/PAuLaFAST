@@ -123,7 +123,7 @@ void Paula_render_1Viewport(GLFWwindow* window)
   ImGui::SliderInt("pt.size", &m_pointSize, 1, 12);
 
 
-  glClearColor(0.9, 0.9, 0.9, 1.0);
+  glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST); // for glReadPixels --> gluUnproject
 
@@ -133,7 +133,7 @@ void Paula_render_1Viewport(GLFWwindow* window)
   glViewport(0, 0, windowWidth, windowHeight);
 
   // Draw stuff
-  glClearColor(0.9, 0.9, 0.9, 1.0);
+  glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glMatrixMode(GL_PROJECTION_MATRIX);
@@ -156,7 +156,7 @@ void Paula_render_2Viewports(GLFWwindow* window)
   ImGui::SliderInt("pt.size", &m_pointSize, 1, 12);
 
 
-  glClearColor(0.9, 0.9, 0.9, 1.0);
+  glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // Scale to window size
@@ -172,7 +172,7 @@ void Paula_render_2Viewports(GLFWwindow* window)
   // ----------
   // Viewport 1
   // ----------
-  glViewport(0, 0, windowWidth*0.5, windowHeight);
+  glViewport(0, 0, windowWidth*0.5f, windowHeight);
   
 
   // optional: different background color, s. https://community.khronos.org/t/viewport-background-color/57584/2
@@ -206,7 +206,7 @@ void Paula_render_2Viewports(GLFWwindow* window)
   // ----------
   // Viewport 2
   // ----------
-  glViewport(windowWidth*0.5, 0, windowWidth*0.5, windowHeight);
+  glViewport(windowWidth*0.5f, 0, windowWidth*0.5f, windowHeight);
 
   glMatrixMode(GL_PROJECTION_MATRIX);
   glLoadIdentity();
