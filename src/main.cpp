@@ -16,8 +16,8 @@
 #include <GL/glu.h>
 
 // c) RANSAC
-#include <pcl/sample_consensus/ransac.h>
-#include <pcl/sample_consensus/sac_model_plane.h>
+//#include <pcl/sample_consensus/ransac.h>
+//#include <pcl/sample_consensus/sac_model_plane.h>
 
 static void error_callback(int error, const char* description)
 {
@@ -116,6 +116,43 @@ Vec3f Mouse2Dto3D(int x, int y)
   return Vec3f(worldX, worldY, worldZ);
 }
 
+int handle_dropped_file(const char* path)
+{
+  if (loadPointCloud(path, *p_cloud) == -1) return -1;
+
+  m_measPoints[0].clear();
+  m_measPoints[1].clear();
+  // 2do: copy over, simplify later
+  for (int i = 0; i < p_cloud->size(); i++) // this for loop can be spared! MeasurmentPoint3D is proprietary, replace with PointXYZ
+  {
+    MeasurementPoint3D pt;
+
+    PointXYZ pt2;
+    pt2 = (*p_cloud)[i];
+
+    pt.x = pt2.x;
+    pt.y = pt2.y;
+    pt.z = pt2.z;
+    pt.r = 99;
+    pt.g = 99;
+    pt.b = 99;
+    m_measPoints[0].push_back(pt);
+
+    // fake: non-ground points
+    if (pt2.z > 0.2f)
+      m_measPoints[1].push_back(pt);
+  }
+  return 0;
+}
+
+void drop_callback(GLFWwindow* window, int count, const char** paths)
+{
+  int i;
+  for (i = 0; i < count; i++)
+    handle_dropped_file(paths[i])
+    ;
+}
+
 int main(int argc, char** argv)
 {
   clock_t begin_time = clock();
@@ -148,6 +185,7 @@ int main(int argc, char** argv)
 //  glfwSetCursorPosCallback(window, cursor_pos_callback);
 //  glfwSetMouseButtonCallback(window, mouse_button_callback); // <-- interferes with IMGui (doesn't work)
 
+  glfwSetDropCallback(window, drop_callback);
 
   // Setup ImGui binding
   ImGui_ImplGlfw_Init(window, true);
