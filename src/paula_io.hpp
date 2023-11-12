@@ -73,6 +73,91 @@ int loadPCDbin(const std::string &filename, PointCloud &cloud)
   return 0;
 }
 
+// https://stackoverflow.com/questions/53849/how-do-i-tokenize-a-string-in-c
+std::vector<std::string> split(const char *str, char c = ' ')
+{
+  std::vector<std::string> result;
+  do
+  {
+    const char *begin = str;
+    while (*str != c && *str)
+      str++;
+    result.push_back(std::string(begin, str));
+  } while (0 != *str++);
+
+  return result;
+}
+enum pcdtype {pcd_ascii=0, pcd_binary=1, pcd_unknown=255};
+int load_pcd_flexi(const std::string &filename, PointCloud &cloud)
+{
+  cloud.clear();
+
+  float f;
+  std::ifstream fs(filename, std::ios::binary);
+  bool bheader = true;
+  std::string line;
+  std::vector<std::string> v_st; // string tokens
+  pcdtype ftype = pcd_unknown;
+
+  int i = 0;
+  PointXYZ p;
+  while ((!fs.eof()))
+  {
+    if (bheader)
+    {
+      std::getline(fs, line);
+      // Ignore empty lines
+      if (line.empty())
+        continue;
+
+      // Tokenize the line
+      v_st = split(line.c_str(), ' ');
+      if (v_st[0] == "DATA") {
+        if (v_st[1] == "ascii") ftype = pcd_ascii;
+        if (v_st[1] == "binary") ftype = pcd_binary;
+        bheader = false;
+      }
+    }
+    else // body, 2do: read dynamic #fields
+    {
+      if (ftype == pcd_ascii)
+      {
+        std::getline(fs, line);
+        // Ignore empty lines
+        if (line.empty())
+          continue;
+        v_st = split(line.c_str(), ' ');
+        p.x = std::stof(v_st[0]);
+        p.y = std::stof(v_st[1]);
+        p.z = std::stof(v_st[2]);
+        cloud.push_back(p);
+        i++;
+      }
+      else if (ftype == pcd_binary)
+      {
+// we do differently than pcd, who forst close the file and then open as io::raw
+        fs.read(reinterpret_cast<char*>(&f), sizeof(float));
+        if (i == 0) p.x = f;
+        if (i == 1) p.y = f;
+        if (i == 2) p.z = f;
+        if (i == 3);// p.intensity = f;
+        i++;
+        if (i == 4)
+        {
+          cloud.push_back(p);
+          i = 0;
+        }
+
+      }
+      else {
+      // error
+      }
+    }
+  }
+  fs.close();
+  return 0;
+}
+
 int loadPCDFile(const std::string &filename, PointCloud &cloud) // this can only read ASCII content files!, takes 0.8sec to load a 5MB .PCD (release build)
 {
   FILE *f;
@@ -83,6 +168,7 @@ int loadPCDFile(const std::string &filename, PointCloud &cloud) // this can only
   float coord[4];
   bool bheader = true;
 
+  cloud.clear();
   fopen_s(&f, filename.c_str(), "r");
   while (fgets(line, sizeof(line), f))
   {
@@ -99,8 +185,14 @@ int loadPCDFile(const std::string &filename, PointCloud &cloud) // this can only
     }
 
     if (bheader)
+    {
       if (std::string(tmp) == "DATA")// && (std::string(tmp2) == "ascii")) // omitting the "ascii" seems considerably faster !?
         bheader = false;
+      if (std::string(tmp2) == "ascii")
+        ;
+      if (std::string(tmp2) == "binary")
+        ;
+    }
   }
   fclose(f);
   return 0;
@@ -122,8 +214,8 @@ int loadPCDFile_fast(const std::string &filename, PointCloud &cloud) // this see
     std::vector<std::string> lines; // 2do: pre-size this!
     std::string line;
     bool bheader = true;
-    float coord[4];
-    int other[3];
+//    float coord[4];
+//    int other[3];
     for (int i = 0; i < contents.size(); i++)                           // THIS
     {                                                                   // IS
       line = line + contents[i];                                        // REALLY
@@ -210,7 +302,7 @@ int loadPointCloud(const std::string &filename, PointCloud &cloud)
   {
 //    if (pcl::io::loadPCDFile<pcl::PointXYZ>(filename, *p_cloud) == -1)
 // really slow atm    if (loadPCDFile_fast(filename, *p_cloud) == -1)
-    if (loadPCDFile(filename, *p_cloud) == -1)
+    if (load_pcd_flexi(filename, *p_cloud) == -1)
     {
 //      PCL_ERROR("Couldn't read file .pcd\n");
       system("pause");
