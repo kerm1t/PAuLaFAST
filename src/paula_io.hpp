@@ -11,6 +11,18 @@
 #include <fstream>
 #include <sstream> // save
 
+// https://stackoverflow.com/questions/55344174/c-close-a-open-file-read-with-mmap
+// for mmap (this is linux only)
+#ifdef _WIN32
+// https ://stackoverflow.com/questions/4087282/is-there-a-memory-mapping-api-on-windows-platform-just-like-mmap-on-linux
+#include "mmap.h"
+#else
+#include <sys/mman.h>-
+#include <sys/stat.h>
+#include <fcntl.h>
+#endif
+#include "lzf.h"
+
 #include <time.h>
 
 bool b_Filechanged = false;
@@ -38,9 +50,15 @@ struct PointXYZI
 };
 
 PointCloud * p_cloud; // later move to paula.h
+char* data_uncomp; // uncompressed point cloud (pcd)
 
+float bintofloat(unsigned int x);
+int load_pcd_compressed(const std::string &filename, PointCloud &cloud);
+
+// ATM this only works for binary non-compressed, 2do. combine with compressed. needs to read the header first!
 int loadPCDbin(const std::string &filename, PointCloud &cloud)
 {
+  cloud.clear();
   // https://stackoverflow.com/questions/19614581/reading-floating-numbers-from-bin-file-continuosly-and-outputting-in-console-win
 
   float f;
@@ -87,7 +105,92 @@ std::vector<std::string> split(const char *str, char c = ' ')
 
   return result;
 }
-enum pcdtype {pcd_ascii=0, pcd_binary=1, pcd_unknown=255};
+
+enum pcdtype {pcd_ascii=0, pcd_binary=1, pcd_binary_compressed=2, pcd_unknown=255};
+
+float bintofloat(unsigned int x) {
+  union {
+    unsigned int  x;
+    float  f;
+  } temp;
+  temp.x = x;
+  return temp.f;
+}
+
+int load_pcd_compressed(const std::string &filename, PointCloud &cloud) {
+  size_t len;
+  map_file(filename.c_str(), len);
+  std::cout << "file-len = " << len << std::endl;
+  
+  // (a) jump over header
+  char *ptr = (char *)lpBasePtr;
+  LONGLONG i = len;
+  int bheader = 0;
+  int lenheader = 0;
+  while ((bheader < 2) && (i-- > 0)) {
+    if (bheader == 0)
+    {
+      if (((*ptr) == 'D') && (*(ptr + 1) == 'A') && (*(ptr + 2) == 'T') && (*(ptr + 3) == 'A'))
+      {
+        // no check for next 0xa
+        bheader = 1;
+      }
+    }
+    else if (bheader == 1)
+    {
+      if ((*ptr) == '\n')
+      {
+        // no check for next 0xa
+        bheader = 2;
+      }
+    }
+    ptr++;
+    lenheader++;
+  }
+
+  // (b) uncompress, from https://github.com/PointCloudLibrary/pcl/blob/master/io/src/pcd_io.cpp
+  unsigned int compressed_size = 0, len_uncomp = 0;
+  memcpy(&compressed_size, ptr, 4);
+  memcpy(&len_uncomp, (ptr+4), 4);
+
+  data_uncomp = (char*)malloc(len_uncomp);
+  unsigned int tmp_size = lzfDecompress((ptr+8), compressed_size, data_uncomp, len_uncomp);
+  if (tmp_size != len_uncomp)
+  {
+    std::cout << "error uncompressing. size mismatch" << std::endl;
+  }
+  
+  // (c) read the data to point cloud
+  const int nfields = 4; // Hack, 2do: read #fields
+  int lenfloat = sizeof(float);
+  i = len_uncomp / lenfloat;
+  int npts = i / nfields; // hack, instead read and parse the header
+
+  // Unpack the x...xy...yz...z to xyzxyz
+  // .... hmm, what to do here?
+  char* ptr_field[nfields];
+  ptr_field[0] = data_uncomp + 0 * npts * lenfloat; // x
+  ptr_field[1] = data_uncomp + 1 * npts * lenfloat; // y
+  ptr_field[2] = data_uncomp + 2 * npts * lenfloat; // z
+  ptr_field[3] = data_uncomp + 3 * npts * lenfloat; // i
+ 
+  PointXYZ p;
+  int j = -1;
+//  ptr = data_uncomp; // bug fixed!
+  while (j++ < npts-1) {
+//    p.x = (float)atof(ptr_field[0] + j * lenfloat); // wrong
+    memcpy(&p.x, ptr_field[0] + j * lenfloat, lenfloat); // https://stackoverflow.com/questions/3991478/building-a-32-bit-float-out-of-its-4-composite-bytes
+    memcpy(&p.y, ptr_field[1] + j * lenfloat, lenfloat);
+    memcpy(&p.z, ptr_field[2] + j * lenfloat, lenfloat);
+//    p.i = *(field_ptr[3] + j * lenfloat);
+    cloud.push_back(p);
+  }
+  // (d) close up
+  free(data_uncomp);
+  close_mapfile(); // only 1 can be opened simultaneously
+
+  return 0;
+}
 int load_pcd_flexi(const std::string &filename, PointCloud &cloud)
 {
   cloud.clear();
@@ -95,13 +198,14 @@ int load_pcd_flexi(const std::string &filename, PointCloud &cloud)
   float f;
   std::ifstream fs(filename, std::ios::binary);
   bool bheader = true;
+  bool beof = false;
   std::string line;
   std::vector<std::string> v_st; // string tokens
   pcdtype ftype = pcd_unknown;
 
   int i = 0;
   PointXYZ p;
-  while ((!fs.eof()))
+  while ((!beof) && (!fs.eof()))
   {
     if (bheader)
     {
@@ -113,9 +217,15 @@ int load_pcd_flexi(const std::string &filename, PointCloud &cloud)
       // Tokenize the line
       v_st = split(line.c_str(), ' ');
       if (v_st[0] == "DATA") {
+//        std::string s = v_st[1];
+        v_st[1].erase(v_st[1].find_last_not_of(" \n\r\t") + 1); // trim string
         if (v_st[1] == "ascii") ftype = pcd_ascii;
         if (v_st[1] == "binary") ftype = pcd_binary;
+        if (v_st[1] == "binary_compressed") ftype = pcd_binary_compressed;
         bheader = false;
+      }
+      else if (v_st[0] == "FIELDS") {
+        std::cout << line << std::endl;
       }
     }
     else // body, 2do: read dynamic #fields
@@ -135,7 +245,7 @@ int load_pcd_flexi(const std::string &filename, PointCloud &cloud)
       }
       else if (ftype == pcd_binary)
       {
-// we do differently than pcd, who forst close the file and then open as io::raw
+        // we do differently than pcd, who forst close the file and then open as io::raw
         fs.read(reinterpret_cast<char*>(&f), sizeof(float));
         if (i == 0) p.x = f;
         if (i == 1) p.y = f;
@@ -149,12 +259,28 @@ int load_pcd_flexi(const std::string &filename, PointCloud &cloud)
         }
 
       }
+      else if (ftype == pcd_binary_compressed) {
+//        std::cout << "binary compressed not supported." << std::endl;
+//        std::cout << "binary compressed still in alpha phase." << std::endl;
+        std::cout << "binary compressed now in beta phase." << std::endl;
+        // header hier einlesen
+        // hier den file pointer merken
+        fs.close();
+        beof = true;
+      }
       else {
       // error
+        return -1;
       }
     }
   }
-  fs.close();
+  if (ftype != pcd_binary_compressed)
+    fs.close();
+  else {
+    // file already closed above
+    load_pcd_compressed(filename, cloud);
+  }
+
   return 0;
 }
 
@@ -305,7 +431,8 @@ int loadPointCloud(const std::string &filename, PointCloud &cloud)
     if (load_pcd_flexi(filename, *p_cloud) == -1)
     {
 //      PCL_ERROR("Couldn't read file .pcd\n");
-      system("pause");
+      std::cout << "Couldn't read file .pcd\n";
+//      system("pause");
       return (-1);
     }
   }
