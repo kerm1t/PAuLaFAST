@@ -1,3 +1,13 @@
+2023-11-4
++ compressed binary
+
+2023-11-12
++ load pcd DATA=binary
+
+2022-10-31
+- fix loading the tablescene
+- parse and show intensity from (kitty-) velo bin file
+
 2020-5-17
 + 2 viewports fully implemented, showing two different pointcloud (steps)
 

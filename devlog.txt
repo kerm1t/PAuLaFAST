@@ -1,0 +1,9 @@
+11/18/2023
++ read compressed .pcd
+
+11/12/2023
++ drag and drop
++ load pcd: DATA=binary
+
+10/31/2022
+after a long time get back to this project.

@@ -1,0 +1,3 @@
+rem use .\debug\paulafast.exe ...
+rem .\debug\paulafast.exe .\datatable_scene_mug_stereo_textured.pcd
+.\debug\paulafast.exe .\data\table_scene_lms400.pcd
