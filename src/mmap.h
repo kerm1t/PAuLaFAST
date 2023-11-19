@@ -11,7 +11,7 @@ LPVOID lpBasePtr;
 
 // much faster than getline
 // https://stackoverflow.com/questions/68368291/mapping-files-into-virtual-memory-in-c-on-windows
-const char* map_file(const char *fname, size_t &length) // loadfile_mmap
+int map_file(const char *fname, size_t &length) // loadfile_mmap
 {
 //  TCHAR *lpFileName = TEXT("hello.txt");
 //  const TCHAR *lpFileName = fname;
@@ -65,7 +65,7 @@ const char* map_file(const char *fname, size_t &length) // loadfile_mmap
     fprintf(stderr, "MapViewOfFile failed with error %d\n", GetLastError());
     CloseHandle(hMap);
     CloseHandle(hFile);
-//    return 1;
+    return 1;
   }
 
   // Display file content as ASCII charaters
@@ -85,9 +85,9 @@ const char* map_file(const char *fname, size_t &length) // loadfile_mmap
 //  CloseHandle(hFile);
 
   printf("\nmapping done.\n");
-  char* dummy = NULL;
-  return dummy;
+  return 0;
 }
+
 void close_mapfile() {
   UnmapViewOfFile(lpBasePtr);
   CloseHandle(hMap);
