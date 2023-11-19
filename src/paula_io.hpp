@@ -33,6 +33,22 @@ int iFile = 0;                   // current position in that v_argv vector of .p
 
 typedef std::vector<string> stringvec;
 stringvec v_files;
+
+enum fld_type { ftF=0, ftU=1 };
+enum pcd_type { pcd_ascii = 0, pcd_binary = 1, pcd_binary_compressed = 2, pcd_unknown = 255 };
+
+struct s_pcd
+{
+  int nfields;
+  std::vector<std::string> fields;
+  std::vector<fld_type> type;
+  std::vector<int> count;
+  int width;
+  int height;
+  int npoints;
+  pcd_type pcdtype;
+};
+
 struct PointXYZ
 {
   float x;
@@ -50,7 +66,7 @@ struct PointXYZI
 };
 
 PointCloud * p_cloud; // later move to paula.h
-char* data_uncomp; // uncompressed point cloud (pcd)
+char* data_uncomp; // uncompressed point cloud (pcd) .. better on heap
 
 float bintofloat(unsigned int x);
 int load_pcd_compressed(const std::string &filename, PointCloud &cloud);
@@ -106,20 +122,10 @@ std::vector<std::string> split(const char *str, char c = ' ')
   return result;
 }
 
-enum pcdtype {pcd_ascii=0, pcd_binary=1, pcd_binary_compressed=2, pcd_unknown=255};
-
-float bintofloat(unsigned int x) {
-  union {
-    unsigned int  x;
-    float  f;
-  } temp;
-  temp.x = x;
-  return temp.f;
-}
-
-int load_pcd_compressed(const std::string &filename, PointCloud &cloud) {
+int load_pcd_compressed(const std::string &filename, const s_pcd &pcd, PointCloud &cloud) {
   size_t len;
-  map_file(filename.c_str(), len);
+  int res = map_file(filename.c_str(), len);
+  if (res != 0) return res;
   std::cout << "file-len = " << len << std::endl;
   
   // (a) jump over header
@@ -162,9 +168,11 @@ int load_pcd_compressed(const std::string &filename, PointCloud &cloud) {
   
   // (c) read the data to point cloud
   const int nfields = 4; // Hack, 2do: read #fields
+//  const int nfields = pcd.nfields;
   int lenfloat = sizeof(float);
   i = len_uncomp / lenfloat;
-  int npts = i / nfields; // hack, instead read and parse the header
+//  int npts = i / nfields; // hack, instead read and parse the header
+  int npts = pcd.npoints; // hack(2)
 
   // Unpack the x...xy...yz...z to xyzxyz
   // .... hmm, what to do here?
@@ -173,24 +181,23 @@ int load_pcd_compressed(const std::string &filename, PointCloud &cloud) {
   ptr_field[1] = data_uncomp + 1 * npts * lenfloat; // y
   ptr_field[2] = data_uncomp + 2 * npts * lenfloat; // z
   ptr_field[3] = data_uncomp + 3 * npts * lenfloat; // i
- 
+  // and copy to point cloud
   PointXYZ p;
   int j = -1;
-//  ptr = data_uncomp; // bug fixed!
   while (j++ < npts-1) {
-//    p.x = (float)atof(ptr_field[0] + j * lenfloat); // wrong
     memcpy(&p.x, ptr_field[0] + j * lenfloat, lenfloat); // https://stackoverflow.com/questions/3991478/building-a-32-bit-float-out-of-its-4-composite-bytes
     memcpy(&p.y, ptr_field[1] + j * lenfloat, lenfloat);
     memcpy(&p.z, ptr_field[2] + j * lenfloat, lenfloat);
-//    p.i = *(field_ptr[3] + j * lenfloat);
     cloud.push_back(p);
   }
+
   // (d) close up
   free(data_uncomp);
   close_mapfile(); // only 1 can be opened simultaneously
 
   return 0;
 }
+
 int load_pcd_flexi(const std::string &filename, PointCloud &cloud)
 {
   cloud.clear();
@@ -201,7 +208,9 @@ int load_pcd_flexi(const std::string &filename, PointCloud &cloud)
   bool beof = false;
   std::string line;
   std::vector<std::string> v_st; // string tokens
-  pcdtype ftype = pcd_unknown;
+  pcd_type ftype = pcd_unknown;
+  
+  s_pcd pcd;
 
   int i = 0;
   PointXYZ p;
@@ -217,7 +226,6 @@ int load_pcd_flexi(const std::string &filename, PointCloud &cloud)
       // Tokenize the line
       v_st = split(line.c_str(), ' ');
       if (v_st[0] == "DATA") {
-//        std::string s = v_st[1];
         v_st[1].erase(v_st[1].find_last_not_of(" \n\r\t") + 1); // trim string
         if (v_st[1] == "ascii") ftype = pcd_ascii;
         if (v_st[1] == "binary") ftype = pcd_binary;
@@ -225,6 +233,12 @@ int load_pcd_flexi(const std::string &filename, PointCloud &cloud)
         bheader = false;
       }
       else if (v_st[0] == "FIELDS") {
+        int nfields = v_st.size() - 1;
+        pcd.nfields = nfields;
+        std::cout << line << std::endl;
+      }
+      else if (v_st[0] == "POINTS") {
+        pcd.npoints = stoi(v_st[1]);
         std::cout << line << std::endl;
       }
     }
@@ -278,7 +292,7 @@ int load_pcd_flexi(const std::string &filename, PointCloud &cloud)
     fs.close();
   else {
     // file already closed above
-    load_pcd_compressed(filename, cloud);
+    load_pcd_compressed(filename, pcd, cloud);
   }
 
   return 0;
